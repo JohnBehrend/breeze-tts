@@ -52,6 +52,7 @@ class ApiSettings:
     fast_backbone_decode: bool
     fast_depth_decoder: bool
     fast_codec: bool
+    attn_implementation: str = "eager"
 
 
 _settings: ApiSettings | None = None
@@ -163,7 +164,7 @@ def _load_app(app: FastAPI, settings: ApiSettings) -> None:
     tokenizer, model, audio_tokenizer = load_runtime(
         settings.model,
         device=resolve_device(),
-        attn_implementation="eager",
+        attn_implementation=settings.attn_implementation,
     )
     update_generation_config_for_breeze(model)
 
@@ -332,6 +333,12 @@ def main() -> None:
     parser.add_argument(
         "--fast-codec", action=argparse.BooleanOptionalAction, default=False
     )
+    parser.add_argument(
+        "--attn-implementation",
+        default="eager",
+        choices=["eager", "sdpa", "flash_attention_2"],
+        help="Attention implementation for the text encoder / backbone.",
+    )
     args = parser.parse_args()
 
     global _settings
@@ -343,6 +350,7 @@ def main() -> None:
         fast_backbone_decode=args.fast_backbone_decode,
         fast_depth_decoder=args.fast_depth_decoder,
         fast_codec=args.fast_codec,
+        attn_implementation=args.attn_implementation,
     )
 
     import uvicorn
